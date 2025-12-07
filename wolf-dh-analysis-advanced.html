@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Advanced NLP Analysis - Enhanced DH Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/compromise@14.10.0/builds/compromise.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 1900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 1rem;
+            opacity: 0.95;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr 450px;
+            gap: 0;
+            height: calc(100vh - 150px);
+            max-height: calc(100vh - 150px);
+        }
+
+        .input-panel, .analysis-panel {
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            padding: 20px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: 100%;
+        }
+
+        .visualization-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: 'Georgia', serif;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .sample-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 6px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .sample-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .controls {
+            padding: 12px 20px;
+            background: #ecf0f1;
+            border-bottom: 2px solid #bdc3c7;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .control-group select {
+            padding: 5px 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        #network {
+            flex: 1;
+            background: #fafbfc;
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            color: #2c3e50;
+            font-weight: 700;
+        }
+
+        .data-table {
+            margin-top: 15px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .table-header {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .table-row {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
+        .table-row:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        .role-subject {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .role-object {
+            background: #4ECDC4;
+            color: white;
+        }
+
+        .role-other {
+            background: #FFE66D;
+            color: #333;
+        }
+
+        .verb-badge {
+            background: #95E1D3;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin: 0 3px;
+        }
+
+        .agency-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-left: 5px;
+        }
+
+        .agency-5 { background: #27ae60; color: white; }
+        .agency-4 { background: #2ecc71; color: white; }
+        .agency-3 { background: #f39c12; color: white; }
+        .agency-2 { background: #e67e22; color: white; }
+        .agency-1 { background: #e74c3c; color: white; }
+        .agency-0 { background: #95a5a6; color: white; }
+
+        .legend {
+            margin-top: 15px;
+            padding: 12px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid #2c3e50;
+        }
+
+        .export-section {
+            margin-top: 15px;
+        }
+
+        .export-btn {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 6px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .export-btn:hover {
+            background: #229954;
+        }
+
+        .insights-section {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+        }
+
+        .insight-item {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .insight-item:before {
+            content: '💡';
+            position: absolute;
+            left: 0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .context-preview {
+            background: #f0f0f0;
+            padding: 8px;
+            border-left: 3px solid #667eea;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            color: #555;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .modifier-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .modifier-tag {
+            background: #FFAAA5;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🐺 Wolf Advanced NLP Analysis</h1>
+            <p>Enhanced Digital Humanities Tool with Complete Grammatical Analysis, Modifier Extraction & Agency Scoring</p>
+        </header>
+
+        <div class="main-layout">
+            <!-- Left Panel: Input -->
+            <div class="input-panel">
+                <div class="section-title">📖 Story Text</div>
+                <textarea id="storyText" placeholder="Enter your fable or fairy tale..."></textarea>
+
+                <div style="margin-top: 15px;">
+                    <div class="section-title">📚 Sample Stories</div>
+                    <button class="sample-btn" onclick="loadSample('aesop')">Aesop: Wolf & Lamb</button>
+                    <button class="sample-btn" onclick="loadSample('redRiding')">Grimm: Red Riding Hood</button>
+                    <button class="sample-btn" onclick="loadSample('threePigs')">Three Little Pigs</button>
+                    <button class="sample-btn" onclick="loadSample('boyWho')">Boy Who Cried Wolf</button>
+                </div>
+
+                <button class="analyze-btn" onclick="analyzeText()">🔬 Advanced NLP Analysis</button>
+                
+                <div class="loading" id="loading">
+                    <div>⏳ Processing Enhanced NLP Pipeline...</div>
+                    <div style="font-size: 0.8rem; margin-top: 8px;">Extracting modifiers, verbs, entities...</div>
+                </div>
+            </div>
+
+            <!-- Center Panel: Visualization -->
+            <div class="visualization-wrapper">
+                <div class="controls">
+                    <div class="control-group">
+                        <label>Filter:</label>
+                        <select id="nodeFilter" onchange="filterNodes()">
+                            <option value="all">All Nodes</option>
+                            <option value="wolf">Wolf Only</option>
+                            <option value="actions">Actions</option>
+                            <option value="entities">Entities</option>
+                            <option value="attributes">Attributes</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Physics:</label>
+                        <select id="physicsToggle" onchange="togglePhysics()">
+                            <option value="on">On</option>
+                            <option value="off">Off</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Agency:</label>
+                        <select id="agencyFilter" onchange="filterByAgency()">
+                            <option value="all">All Levels</option>
+                            <option value="high">High (4-5)</option>
+                            <option value="medium">Medium (2-3)</option>
+                            <option value="low">Low (0-1)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="network"></div>
+            </div>
+
+            <!-- Right Panel: Analysis Results -->
+            <div class="analysis-panel">
+                <div class="section-title">📊 Enhanced Metrics</div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Mentions</div>
+                        <div class="metric-value" id="totalMentions">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">As Subject</div>
+                        <div class="metric-value" id="subjectCount">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">As Object</div>
+                        <div class="metric-value" id="objectCount">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Agency</div>
+                        <div class="metric-value" id="avgAgency">0.0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Unique Verbs</div>
+                        <div class="metric-value" id="uniqueVerbs">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Modifiers</div>
+                        <div class="metric-value" id="totalModifiers">0</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="section-title">🔍 Detailed Wolf Occurrences</div>
+                    <div class="data-table" id="occurrenceTable">
+                        <div class="table-header">No data yet - analyze a story first</div>
+                    </div>
+                </div>
+
+                <div class="insights-section" id="insights" style="display:none;">
+                    <div class="section-title">💡 Advanced Insights</div>
+                    <div id="insightsList"></div>
+                </div>
+
+                <div class="legend">
+                    <div class="section-title">🎨 Network Legend</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FA8072;"></div>
+                        <span>Wolf (Subject Role)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FF8C00;"></div>
+                        <span>Wolf (Object Role)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #800080;"></div>
+                        <span>Wolf (Other Role)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #48D1CC;"></div>
+                        <span>Actions (Verbs)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #7FFFD4;"></div>
+                        <span>Entities (Characters)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #FBEC5D;"></div>
+                        <span>Attributes (Modifiers)</span>
+                    </div>
+                </div>
+
+                <div class="export-section">
+                    <div class="section-title">💾 Export Enhanced Data</div>
+                    <button class="export-btn" onclick="exportEnhancedCSV()">📊 Export Enhanced CSV</button>
+                    <button class="export-btn" onclick="exportJSON()">📄 Export JSON</button>
+                    <button class="export-btn" onclick="exportGraph()">🔗 Export Graph (Gephi)</button>
+                    <button class="export-btn" onclick="generateEmbedCode()" style="background: #e74c3c;">🌐 Generate Embed Code</button>
+                </div>
+                
+                <div id="embedModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; overflow:auto;">
+                    <div style="background:white; max-width:800px; margin:50px auto; padding:30px; border-radius:12px; position:relative;">
+                        <button onclick="closeEmbedModal()" style="position:absolute; top:15px; right:15px; background:#e74c3c; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:bold;">✕ Close</button>
+                        
+                        <h2 style="color:#2c3e50; margin-bottom:20px;">🌐 Embed Code Generator</h2>
+                        
+                        <div style="margin-bottom:20px;">
+                            <h3 style="color:#34495e; font-size:16px; margin-bottom:10px;">📋 HTML Embed Code (Copy & Paste)</h3>
+                            <textarea id="embedCode" readonly style="width:100%; height:150px; padding:12px; border:2px solid #ddd; border-radius:6px; font-family:monospace; font-size:12px; resize:vertical;"></textarea>
+                            <button onclick="copyEmbedCode()" style="margin-top:10px; padding:10px 20px; background:#27ae60; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">📋 Copy to Clipboard</button>
+                        </div>
+                        
+                        <div style="margin-bottom:20px;">
+                            <h3 style="color:#34495e; font-size:16px; margin-bottom:10px;">🔗 iframe Code (for Google Sites)</h3>
+                            <textarea id="iframeCode" readonly style="width:100%; height:100px; padding:12px; border:2px solid #ddd; border-radius:6px; font-family:monospace; font-size:12px;"></textarea>
+                            <button onclick="copyIframeCode()" style="margin-top:10px; padding:10px 20px; background:#3498db; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">📋 Copy iframe Code</button>
+                            <p style="font-size:12px; color:#7f8c8d; margin-top:8px;">⚠️ Note: First save the generated HTML file to a web server or GitHub Pages, then replace "YOUR_URL_HERE" with the actual URL.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 style="color:#34495e; font-size:16px; margin-bottom:10px;">💾 Download Standalone HTML</h3>
+                            <button onclick="downloadEmbedHTML()" style="padding:12px 24px; background:#9b59b6; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600; font-size:14px;">⬇️ Download Embed HTML File</button>
+                            <p style="font-size:12px; color:#7f8c8d; margin-top:8px;">This will download a complete standalone HTML file with your current network data.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let network;
+        let nodes, edges;
+        let analysisData = {};
+
+        const samples = {
+            aesop: `A Wolf came upon a Lamb straying from the flock, and felt some compunction about taking the life of so helpless a creature without some plausible excuse. So he cast about for a grievance and said at last, "Last year, you grossly insulted me." "That is impossible, sir," bleated the Lamb, "for I wasn't born then." "Well," retorted the Wolf, "you feed in my pastures." "That cannot be," replied the Lamb, "for I have never yet tasted grass." "You drink from my spring, then," continued the Wolf. "Indeed, sir," said the poor Lamb, "I have never yet drunk anything but my mother's milk." "Well, anyhow," said the Wolf, "I'm not going to remain supperless, even though you refute every one of my imputations." The tyrant can always find an excuse for his tyranny.`,
+            
+            redRiding: `Once upon a time there was a dear little girl. One day her mother said: "Take this cake and wine to your grandmother." Little Red Riding Hood set out. When she entered the wood, a wolf met her. Little Red Riding Hood did not know what a wicked creature he was. "Good day," said the wolf. "Where are you going so early?" "To my grandmother's house." "What are you carrying?" "Cake and wine." The wolf thought: "What a tender young creature! She will be better to eat than the old woman." So the wolf walked beside Little Red Riding Hood, then said: "Look at the beautiful flowers!" While Little Red Riding Hood picked flowers, the wolf ran to the grandmother's house and knocked. He went to the grandmother's bed and devoured her. Then he put on her clothes and laid in bed. Little Red Riding Hood arrived and went to the bed. "Oh grandmother, what big ears you have!" "The better to hear you with." "But grandmother, what big eyes you have!" "The better to see you with." "Oh, what large hands you have!" "The better to hug you with." "What a terrible big mouth you have!" "The better to eat you with!" And the wolf swallowed up Red Riding Hood.`,
+            
+            threePigs: `Once upon a time there were three little pigs. One pig built a house of straw. Another built a house of sticks. The third built a house of bricks. A big bad wolf saw the first little pig in his house of straw. The wolf said, "Let me in, little pig, or I'll huff and puff and blow your house in!" "Not by the hair of my chinny chin chin," said the pig. But the wolf blew down the straw house. The pig ran to the stick house. The wolf came to the house of sticks. "Let me in, or I'll huff and puff and blow your house in!" But the wolf blew down the stick house too. Both pigs ran to the brick house. The wolf came to the brick house. "Let me in, or I'll huff and puff and blow your house in!" The wolf huffed and puffed but could not blow down the brick house. The wolf climbed on the roof. The clever pig put a pot of boiling water in the fireplace. The wolf fell down the chimney into the pot.`,
+            
+            boyWho: `There was a shepherd boy who watched the village sheep. To amuse himself he sang out, "Wolf! Wolf! The wolf is chasing the sheep!" The villagers ran up the hill to help drive the wolf away. But they found no wolf. The boy laughed. "Don't cry wolf when there's no wolf!" said the villagers. Later, the boy sang out again, "Wolf! Wolf!" The villagers ran up to help him drive the wolf away. When they saw no wolf they said sternly, "Don't cry wolf when there is no wolf!" Later, the boy saw a real wolf prowling about his flock. He leaped up and sang out loudly, "Wolf! Wolf!" But the villagers thought he was fooling them again, and didn't come. At sunset, everyone wondered why the shepherd boy hadn't returned with their sheep. They went up the hill to find him weeping. "There really was a wolf here! The flock has scattered! I cried out 'Wolf!' Why didn't you come?"`
+        };
+
+        function loadSample(type) {
+            document.getElementById('storyText').value = samples[type];
+        }
+
+        function analyzeText() {
+            const text = document.getElementById('storyText').value;
+            if (!text.trim()) {
+                alert('Please enter a story text first!');
+                return;
+            }
+
+            document.getElementById('loading').classList.add('active');
+
+            try {
+                if (typeof nlp === 'undefined') {
+                    alert('NLP library is loading. Please wait a moment and try again.');
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+
+                // Enhanced NLP Pipeline
+                const doc = nlp(text);
+                const sentences = doc.sentences().out('array');
+                
+                analysisData = {
+                    wolfOccurrences: [],
+                    subjectInstances: [],
+                    objectInstances: [],
+                    otherInstances: [],
+                    verbData: new Map(),
+                    modifiers: {
+                        adjectives: new Map(),
+                        adverbs: new Map(),
+                        prepositionalPhrases: []
+                    },
+                    entities: new Map(),
+                    relationships: []
+                };
+
+                // Process each sentence with enhanced analysis
+                sentences.forEach((sentence, idx) => {
+                    const sentDoc = nlp(sentence);
+                    if (sentDoc.match('(wolf|wolves)').found) {
+                        processWolfSentenceAdvanced(sentDoc, idx, sentence, sentences);
+                    }
+                });
+
+                // Build enhanced network
+                buildEnhancedNetwork();
+                
+                // Update metrics
+                updateEnhancedMetrics();
+                
+                // Generate advanced insights
+                generateAdvancedInsights();
+                
+                // Update occurrence table
+                updateEnhancedOccurrenceTable();
+
+                document.getElementById('loading').classList.remove('active');
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Error during analysis: ' + error.message);
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function processWolfSentenceAdvanced(sentDoc, idx, sentence, allSentences) {
+            const text = sentence.toLowerCase();
+            const wolfMatch = text.match(/(wolf|wolves)/);
+            if (!wolfMatch) return;
+
+            const wolfWord = wolfMatch[0];
+            const wolfPos = text.indexOf(wolfWord);
+
+            // Get context sentences
+            const prevSentence = idx > 0 ? allSentences[idx - 1] : '';
+            const nextSentence = idx < allSentences.length - 1 ? allSentences[idx + 1] : '';
+
+            // Extract linguistic elements
+            const verbs = sentDoc.verbs().out('array');
+            const allAdjectives = sentDoc.adjectives().out('array');
+            const adverbs = sentDoc.adverbs().out('array');
+            const nouns = sentDoc.nouns().out('array');
+
+            // Determine grammatical role with enhanced logic
+            let grammaticalRole = 'other';
+            let roleSubtype = 'unknown';
+            let mainVerb = null;
+            let verbFeatures = {};
+            let relatedEntity = null;
+            let relationshipType = null;
+
+            // Enhanced role detection
+            verbs.forEach(verb => {
+                const verbPos = text.indexOf(verb.toLowerCase());
+                if (verbPos === -1) return;
+
+                const verbDoc = nlp(verb);
+                
+                // Wolf before verb → likely subject
+                if (wolfPos < verbPos && (verbPos - wolfPos) < 50) {
+                    grammaticalRole = 'subject';
+                    
+                    // Determine subtype
+                    if (verb.match(/\b(say|said|tell|told|reply|replied|speak|spoke|cry|cried)\b/i)) {
+                        roleSubtype = 'speaking_agent';
+                    } else if (verb.match(/\b(think|thought|feel|felt|know|knew|wonder|wondered)\b/i)) {
+                        roleSubtype = 'thinking_agent';
+                    } else {
+                        roleSubtype = 'active_agent';
+                    }
+                    
+                    mainVerb = verb;
+                    
+                    // Extract verb features
+                    verbFeatures = analyzeVerbFeatures(verb, sentence);
+                    
+                    // Find object after verb
+                    nouns.forEach(noun => {
+                        const nounPos = text.indexOf(noun.toLowerCase());
+                        if (nounPos > verbPos && !noun.toLowerCase().includes('wolf')) {
+                            relatedEntity = noun;
+                            relationshipType = 'acts_upon';
+                        }
+                    });
+                }
+                // Wolf after verb → likely object
+                else if (wolfPos > verbPos && (wolfPos - verbPos) < 50) {
+                    grammaticalRole = 'object';
+                    
+                    // Check for passive voice or direct object
+                    if (text.includes('by the') || text.includes('by a')) {
+                        roleSubtype = 'passive_patient';
+                    } else {
+                        roleSubtype = 'direct_object';
+                    }
+                    
+                    mainVerb = verb;
+                    verbFeatures = analyzeVerbFeatures(verb, sentence);
+                    
+                    // Find subject before verb
+                    nouns.forEach(noun => {
+                        const nounPos = text.indexOf(noun.toLowerCase());
+                        if (nounPos < verbPos && !noun.toLowerCase().includes('wolf')) {
+                            relatedEntity = noun;
+                            relationshipType = 'acted_upon_by';
+                        }
+                    });
+                }
+            });
+
+            // Check for possessive
+            if (text.includes("wolf's") || text.includes("wolves'")) {
+                if (grammaticalRole === 'other') {
+                    grammaticalRole = 'other';
+                    roleSubtype = 'possessive';
+                }
+            }
+
+            // Extract ONLY wolf-related modifiers
+            const wolfModifiers = extractWolfModifiers(text, wolfPos, allAdjectives, adverbs);
+            
+            // Calculate agency score
+            const agencyScore = calculateAgencyScore(grammaticalRole, roleSubtype, mainVerb, wolfModifiers);
+
+            // Store occurrence with enhanced data
+            const occurrence = {
+                sentenceIndex: idx,
+                sentence: sentence,
+                wolfWord: wolfWord,
+                wolfPhrase: extractWolfPhrase(sentence, wolfWord),
+                grammaticalRole: grammaticalRole,
+                roleSubtype: roleSubtype,
+                mainVerb: mainVerb,
+                verbFeatures: verbFeatures,
+                directAdjectives: wolfModifiers.adjectives,
+                adverbs: wolfModifiers.adverbs,
+                prepositionalPhrases: wolfModifiers.prepPhrases,
+                relatedEntity: relatedEntity,
+                relationshipType: relationshipType,
+                agencyScore: agencyScore,
+                context: {
+                    previous: prevSentence,
+                    next: nextSentence
+                }
+            };
+
+            analysisData.wolfOccurrences.push(occurrence);
+
+            // Categorize by role
+            if (grammaticalRole === 'subject') {
+                analysisData.subjectInstances.push(occurrence);
+            } else if (grammaticalRole === 'object') {
+                analysisData.objectInstances.push(occurrence);
+            } else {
+                analysisData.otherInstances.push(occurrence);
+            }
+
+            // Store verb data
+            if (mainVerb) {
+                const verbKey = mainVerb.toLowerCase();
+                if (!analysisData.verbData.has(verbKey)) {
+                    analysisData.verbData.set(verbKey, {
+                        count: 0,
+                        features: verbFeatures,
+                        contexts: []
+                    });
+                }
+                const vData = analysisData.verbData.get(verbKey);
+                vData.count++;
+                vData.contexts.push(sentence);
+            }
+
+            // Store modifiers
+            wolfModifiers.adjectives.forEach(adj => {
+                const count = analysisData.modifiers.adjectives.get(adj) || 0;
+                analysisData.modifiers.adjectives.set(adj, count + 1);
+            });
+
+            wolfModifiers.adverbs.forEach(adv => {
+                const count = analysisData.modifiers.adverbs.get(adv) || 0;
+                analysisData.modifiers.adverbs.set(adv, count + 1);
+            });
+
+            // Store entity
+            if (relatedEntity) {
+                const entityKey = relatedEntity.toLowerCase();
+                if (!analysisData.entities.has(entityKey)) {
+                    analysisData.entities.set(entityKey, 0);
+                }
+                analysisData.entities.set(entityKey, analysisData.entities.get(entityKey) + 1);
+                
+                analysisData.relationships.push({
+                    wolf: wolfWord,
+                    entity: relatedEntity,
+                    type: relationshipType,
+                    verb: mainVerb,
+                    sentence: sentence
+                });
+            }
+        }
+
+        function analyzeVerbFeatures(verb, sentence) {
+            const verbLower = verb.toLowerCase();
+            const sentLower = sentence.toLowerCase();
+            
+            // Tense detection
+            let tense = 'present';
+            if (verbLower.match(/ed$|was|were|had|did/) || sentLower.includes(' was ') || sentLower.includes(' were ')) {
+                tense = 'past';
+            } else if (sentLower.includes('will ') || sentLower.includes('shall ')) {
+                tense = 'future';
+            }
+            
+            // Voice detection
+            let voice = 'active';
+            if (sentLower.includes('was ' + verbLower) || sentLower.includes('were ' + verbLower) || 
+                sentLower.includes('been ' + verbLower)) {
+                voice = 'passive';
+            }
+            
+            // Modality detection
+            let modality = 'none';
+            const modalWords = ['can', 'could', 'will', 'would', 'should', 'might', 'must', 'may'];
+            modalWords.forEach(modal => {
+                if (sentLower.includes(modal + ' ')) {
+                    modality = modal;
+                }
+            });
+            
+            // Semantic class
+            let semanticClass = 'other';
+            const physicalActions = ['spring', 'chase', 'kill', 'eat', 'run', 'jump', 'attack', 'bite', 'catch', 'blow', 'huff', 'puff', 'climb', 'fall', 'devour', 'swallow'];
+            const speechActs = ['say', 'said', 'tell', 'told', 'reply', 'replied', 'speak', 'spoke', 'cry', 'cried', 'ask', 'asked', 'retort'];
+            const mentalStates = ['think', 'thought', 'feel', 'felt', 'know', 'knew', 'wonder', 'wondered', 'intend', 'intended'];
+            const perceptions = ['see', 'saw', 'hear', 'heard', 'notice', 'noticed', 'watch', 'watched'];
+            const existence = ['be', 'was', 'were', 'is', 'are', 'become', 'became', 'seem', 'seemed'];
+            
+            if (physicalActions.some(v => verbLower.includes(v))) semanticClass = 'physical_action';
+            else if (speechActs.some(v => verbLower.includes(v))) semanticClass = 'speech_act';
+            else if (mentalStates.some(v => verbLower.includes(v))) semanticClass = 'mental_state';
+            else if (perceptions.some(v => verbLower.includes(v))) semanticClass = 'perception';
+            else if (existence.some(v => verbLower.includes(v))) semanticClass = 'existence';
+            
+            return {
+                tense: tense,
+                voice: voice,
+                modality: modality,
+                semanticClass: semanticClass
+            };
+        }
+
+        function extractWolfModifiers(text, wolfPos, allAdjectives, adverbs) {
+            const adjectives = [];
+            const advs = [];
+            const prepPhrases = [];
+            
+            // Extract adjectives within 30 characters before wolf
+            allAdjectives.forEach(adj => {
+                const adjPos = text.indexOf(adj.toLowerCase());
+                if (adjPos >= 0 && adjPos < wolfPos && (wolfPos - adjPos) < 30) {
+                    adjectives.push(adj);
+                }
+            });
+            
+            // Extract predicate adjectives (wolf was/is/seemed ADJECTIVE)
+            const predicatePattern = /wolf (was|is|were|are|seemed|seems|became) (\w+)/i;
+            const match = text.match(predicatePattern);
+            if (match && match[2]) {
+                adjectives.push(match[2]);
+            }
+            
+            // Extract adverbs near wolf's actions
+            adverbs.forEach(adv => {
+                const advPos = text.indexOf(adv.toLowerCase());
+                if (advPos >= 0 && Math.abs(advPos - wolfPos) < 40) {
+                    advs.push(adv);
+                }
+            });
+            
+            // Extract prepositional phrases
+            const prepPattern = /wolf (in|with|of|from|to|by|at|on) ([\w\s]+?)(?=[,.]|$)/i;
+            const prepMatch = text.match(prepPattern);
+            if (prepMatch) {
+                prepPhrases.push(prepMatch[1] + ' ' + prepMatch[2].trim());
+            }
+            
+            return {
+                adjectives: adjectives,
+                adverbs: advs,
+                prepPhrases: prepPhrases
+            };
+        }
+
+        function extractWolfPhrase(sentence, wolfWord) {
+            const pattern = new RegExp('(\\w+\\s+)?' + wolfWord + '(\\s+\\w+)?', 'i');
+            const match = sentence.match(pattern);
+            return match ? match[0] : wolfWord;
+        }
+
+        function calculateAgencyScore(role, subtype, verb, modifiers) {
+            let score = 0;
+            
+            // Base score from role
+            if (role === 'subject') {
+                if (subtype === 'active_agent') score = 4;
+                else if (subtype === 'speaking_agent') score = 3;
+                else if (subtype === 'thinking_agent') score = 3;
+                else score = 3;
+            } else if (role === 'object') {
+                if (subtype === 'passive_patient') score = 1;
+                else score = 2;
+            } else {
+                score = 1;
+            }
+            
+            // Boost for complex verbs
+            if (verb && (verb.match(/think|intend|plan|decide/i))) {
+                score = Math.min(5, score + 1);
+            }
+            
+            // Boost for intentionality modifiers
+            const intentionalAdjs = ['clever', 'cunning', 'wise', 'intelligent'];
+            if (modifiers.adjectives.some(adj => intentionalAdjs.includes(adj.toLowerCase()))) {
+                score = Math.min(5, score + 1);
+            }
+            
+            return score;
+        }
+
+        function buildEnhancedNetwork() {
+            console.log('Building enhanced network...');
+            
+            const nodesData = [];
+            const edgesData = [];
+            const nodeMap = new Map();
+            let nodeId = 0;
+
+            // Create wolf nodes by role
+            const subjectWolf = {
+                id: nodeId++,
+                label: '🐺 WOLF\n[Subject]',
+                title: `Wolf as Subject (${analysisData.subjectInstances.length} times)`,
+                color: '#FA8072',
+                size: 40 + analysisData.subjectInstances.length * 3,
+                font: { size: 18, color: 'white', bold: true },
+                category: 'wolf',
+                role: 'subject'
+            };
+            nodesData.push(subjectWolf);
+            nodeMap.set('wolf-subject', subjectWolf.id);
+
+            const objectWolf = {
+                id: nodeId++,
+                label: '🐺 WOLF\n[Object]',
+                title: `Wolf as Object (${analysisData.objectInstances.length} times)`,
+                color: '#FF8C00',
+                size: 40 + analysisData.objectInstances.length * 3,
+                font: { size: 18, color: 'white', bold: true },
+                category: 'wolf',
+                role: 'object'
+            };
+            nodesData.push(objectWolf);
+            nodeMap.set('wolf-object', objectWolf.id);
+
+            if (analysisData.otherInstances.length > 0) {
+                const otherWolf = {
+                    id: nodeId++,
+                    label: '🐺 WOLF\n[Other]',
+                    title: `Wolf in Other Role (${analysisData.otherInstances.length} times)`,
+                    color: '#800080',
+                    size: 40 + analysisData.otherInstances.length * 3,
+                    font: { size: 16, color: 'white', bold: true },
+                    category: 'wolf',
+                    role: 'other'
+                };
+                nodesData.push(otherWolf);
+                nodeMap.set('wolf-other', otherWolf.id);
+            }
+
+            // Add verb/action nodes
+            analysisData.verbData.forEach((data, verb) => {
+                const actionNode = {
+                    id: nodeId++,
+                    label: verb,
+                    title: `Action: ${verb} (${data.count}x)\n${data.features.semanticClass}`,
+                    color: '#48D1CC',
+                    size: 20 + data.count * 4,
+                    font: { size: 13, bold: true, color: '#333' },
+                    category: 'action'
+                };
+                nodesData.push(actionNode);
+                nodeMap.set(`verb-${verb}`, actionNode.id);
+                
+                // Connect to appropriate wolf node
+                const subjectCount = analysisData.subjectInstances.filter(o => o.mainVerb === verb).length;
+                const objectCount = analysisData.objectInstances.filter(o => o.mainVerb === verb).length;
+                
+                if (subjectCount > 0) {
+                    edgesData.push({
+                        from: nodeMap.get('wolf-subject'),
+                        to: actionNode.id,
+                        width: 2 + subjectCount,
+                        arrows: 'to',
+                        label: 'performs',
+                        color: { color: '#FF6B6B' }
+                    });
+                }
+                
+                if (objectCount > 0) {
+                    edgesData.push({
+                        from: actionNode.id,
+                        to: nodeMap.get('wolf-object'),
+                        width: 2 + objectCount,
+                        arrows: 'to',
+                        label: 'affects',
+                        color: { color: '#4ECDC4' }
+                    });
+                }
+            });
+
+            // Add entity nodes
+            analysisData.entities.forEach((count, entity) => {
+                const entityNode = {
+                    id: nodeId++,
+                    label: entity,
+                    title: `Entity: ${entity} (${count} interactions)`,
+                    color: '#7FFFD4',
+                    size: 18 + count * 3,
+                    font: { size: 12, color: '#333', bold: true },
+                    category: 'entity'
+                };
+                nodesData.push(entityNode);
+                nodeMap.set(`entity-${entity}`, entityNode.id);
+            });
+
+            // Add relationship edges
+            analysisData.relationships.forEach(rel => {
+                const entityNodeId = nodeMap.get(`entity-${rel.entity.toLowerCase()}`);
+                const verbNodeId = nodeMap.get(`verb-${rel.verb}`);
+                
+                if (entityNodeId && verbNodeId) {
+                    if (rel.type === 'acts_upon') {
+                        edgesData.push({
+                            from: verbNodeId,
+                            to: entityNodeId,
+                            width: 2,
+                            arrows: 'to',
+                            dashes: true,
+                            color: { color: '#95E1D3' }
+                        });
+                    } else if (rel.type === 'acted_upon_by') {
+                        edgesData.push({
+                            from: entityNodeId,
+                            to: verbNodeId,
+                            width: 2,
+                            arrows: 'to',
+                            dashes: true,
+                            color: { color: '#A8E6CF' }
+                        });
+                    }
+                }
+            });
+
+            // Add attribute nodes (adjectives)
+            analysisData.modifiers.adjectives.forEach((count, adj) => {
+                const attrNode = {
+                    id: nodeId++,
+                    label: adj,
+                    title: `Attribute: ${adj} (${count}x)`,
+                    color: '#FBEC5D',
+                    size: 15 + count * 2,
+                    font: { size: 11, color: '#333', bold: true },
+                    category: 'attribute'
+                };
+                nodesData.push(attrNode);
+                
+                // Connect to all wolf nodes that have this adjective
+                ['subject', 'object', 'other'].forEach(role => {
+                    const instances = analysisData[role + 'Instances'] || [];
+                    const hasAdj = instances.some(o => o.directAdjectives && o.directAdjectives.includes(adj));
+                    if (hasAdj && nodeMap.has(`wolf-${role}`)) {
+                        edgesData.push({
+                            from: nodeMap.get(`wolf-${role}`),
+                            to: attrNode.id,
+                            width: 1.5,
+                            dashes: [5, 5],
+                            label: 'described_by',
+                            color: { color: '#FFAAA5' }
+                        });
+                    }
+                });
+            });
+
+            // Create network
+            nodes = new vis.DataSet(nodesData);
+            edges = new vis.DataSet(edgesData);
+
+            const container = document.getElementById('network');
+            if (!container) {
+                console.error('Network container not found');
+                return;
+            }
+
+            const data = { nodes, edges };
+
+            const options = {
+                physics: {
+                    enabled: true,
+                    stabilization: { 
+                        enabled: true,
+                        iterations: 200
+                    },
+                    barnesHut: {
+                        gravitationalConstant: -12000,
+                        centralGravity: 0.4,
+                        springLength: 150,
+                        springConstant: 0.05,
+                        damping: 0.1,
+                        avoidOverlap: 0.6
+                    }
+                },
+                layout: {
+                    randomSeed: 42
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 100,
+                    navigationButtons: true,
+                    keyboard: true,
+                    dragNodes: true,
+                    dragView: true,
+                    zoomView: true
+                },
+                nodes: {
+                    shape: 'circle',
+                    borderWidth: 3,
+                    borderWidthSelected: 5,
+                    shadow: {
+                        enabled: true,
+                        color: 'rgba(0,0,0,0.3)',
+                        size: 10,
+                        x: 3,
+                        y: 3
+                    }
+                },
+                edges: {
+                    smooth: {
+                        enabled: true,
+                        type: 'continuous',
+                        roundness: 0.5
+                    },
+                    font: {
+                        size: 10,
+                        align: 'middle'
+                    }
+                }
+            };
+
+            if (typeof vis === 'undefined') {
+                console.error('Vis-Network library not loaded');
+                alert('Network visualization library failed to load. Please refresh the page.');
+                return;
+            }
+
+            console.log('Creating network with', nodesData.length, 'nodes and', edgesData.length, 'edges');
+
+            network = new vis.Network(container, data, options);
+            
+            network.once('stabilizationIterationsDone', function() {
+                console.log('Network stabilized');
+                network.fit({
+                    animation: {
+                        duration: 1000,
+                        easingFunction: 'easeInOutQuad'
+                    }
+                });
+            });
+
+            setTimeout(() => {
+                if (network) {
+                    network.fit();
+                    console.log('Network fitted');
+                }
+            }, 1500);
+        }
+
+        function updateEnhancedMetrics() {
+            const total = analysisData.wolfOccurrences.length;
+            const subject = analysisData.subjectInstances.length;
+            const object = analysisData.objectInstances.length;
+            const avgAgency = total > 0 ? 
+                (analysisData.wolfOccurrences.reduce((sum, o) => sum + o.agencyScore, 0) / total).toFixed(1) : 
+                0;
+            const uniqueVerbs = analysisData.verbData.size;
+            const totalModifiers = analysisData.modifiers.adjectives.size + analysisData.modifiers.adverbs.size;
+
+            document.getElementById('totalMentions').textContent = total;
+            document.getElementById('subjectCount').textContent = subject;
+            document.getElementById('objectCount').textContent = object;
+            document.getElementById('avgAgency').textContent = avgAgency;
+            document.getElementById('uniqueVerbs').textContent = uniqueVerbs;
+            document.getElementById('totalModifiers').textContent = totalModifiers;
+        }
+
+        function updateEnhancedOccurrenceTable() {
+            const table = document.getElementById('occurrenceTable');
+            if (analysisData.wolfOccurrences.length === 0) {
+                table.innerHTML = '<div class="table-header">No wolf mentions found</div>';
+                return;
+            }
+
+            let html = '<div class="table-header">Detailed Analysis Results</div>';
+            analysisData.wolfOccurrences.forEach((occ, idx) => {
+                const roleClass = `role-${occ.grammaticalRole}`;
+                const agencyClass = `agency-${occ.agencyScore}`;
+                const snippet = occ.sentence.length > 100 ? 
+                    occ.sentence.substring(0, 100) + '...' : occ.sentence;
+                
+                html += `
+                    <div class="table-row">
+                        <div>
+                            <span class="role-badge ${roleClass}">${occ.grammaticalRole.toUpperCase()}</span>
+                            <span class="agency-badge ${agencyClass}">Agency: ${occ.agencyScore}</span>
+                        </div>
+                        ${occ.mainVerb ? `<div style="margin-top:4px;"><span class="verb-badge">${occ.mainVerb}</span> <small>(${occ.verbFeatures.semanticClass}, ${occ.verbFeatures.tense}, ${occ.verbFeatures.voice})</small></div>` : ''}
+                        ${occ.relatedEntity ? `<div style="margin-top:4px;"><strong>${occ.relationshipType}:</strong> ${occ.relatedEntity}</div>` : ''}
+                        ${occ.directAdjectives && occ.directAdjectives.length > 0 ? `<div class="modifier-list">${occ.directAdjectives.map(a => `<span class="modifier-tag">${a}</span>`).join('')}</div>` : ''}
+                        <div class="context-preview">"${snippet}"</div>
+                    </div>
+                `;
+            });
+            table.innerHTML = html;
+        }
+
+        function generateAdvancedInsights() {
+            const insights = [];
+            const total = analysisData.wolfOccurrences.length;
+            const subject = analysisData.subjectInstances.length;
+            const object = analysisData.objectInstances.length;
+            
+            // Agency analysis
+            const avgAgency = analysisData.wolfOccurrences.reduce((sum, o) => sum + o.agencyScore, 0) / total;
+            if (avgAgency >= 3.5) {
+                insights.push(`Wolf exhibits <strong>high agency</strong> (avg ${avgAgency.toFixed(1)}/5), predominantly acting as an autonomous agent in the narrative.`);
+            } else if (avgAgency < 2.5) {
+                insights.push(`Wolf shows <strong>limited agency</strong> (avg ${avgAgency.toFixed(1)}/5), often portrayed as a passive or reactive entity.`);
+            }
+
+            // Role distribution
+            if (subject > object * 2) {
+                insights.push(`Wolf is overwhelmingly portrayed as <strong>active subject</strong> (${subject}/${total}), driving narrative action.`);
+            } else if (object > subject) {
+                insights.push(`Wolf appears more often as <strong>object/patient</strong> (${object}/${total}), receiving actions rather than performing them.`);
+            }
+
+            // Verb semantic analysis
+            const physicalActions = Array.from(analysisData.verbData.values()).filter(v => v.features.semanticClass === 'physical_action').length;
+            const speechActions = Array.from(analysisData.verbData.values()).filter(v => v.features.semanticClass === 'speech_act').length;
+            
+            if (physicalActions > speechActions * 2) {
+                insights.push(`Wolf is characterized primarily through <strong>physical actions</strong> (${physicalActions} verbs), emphasizing bodily agency over verbal interaction.`);
+            } else if (speechActions >= physicalActions) {
+                insights.push(`Wolf engages in significant <strong>dialogue/speech acts</strong> (${speechActions} verbs), suggesting social intelligence and communicative ability.`);
+            }
+
+            // Modifier analysis
+            const negativeAdjs = ['bad', 'wicked', 'evil', 'cruel', 'greedy', 'hungry'];
+            const positiveAdjs = ['clever', 'wise', 'noble', 'brave'];
+            const negCount = Array.from(analysisData.modifiers.adjectives.keys()).filter(adj => 
+                negativeAdjs.includes(adj.toLowerCase())
+            ).length;
+            const posCount = Array.from(analysisData.modifiers.adjectives.keys()).filter(adj => 
+                positiveAdjs.includes(adj.toLowerCase())
+            ).length;
+
+            if (negCount > posCount) {
+                insights.push(`Wolf is described with predominantly <strong>negative moral attributes</strong>, reinforcing the antagonist archetype.`);
+            } else if (posCount > 0) {
+                insights.push(`Wolf receives some <strong>positive characterization</strong>, suggesting narrative complexity beyond simple villain role.`);
+            }
+
+            // Entity interaction
+            if (analysisData.entities.size > 0) {
+                const topEntity = Array.from(analysisData.entities.entries()).sort((a, b) => b[1] - a[1])[0];
+                insights.push(`Wolf primarily interacts with <strong>${topEntity[0]}</strong> (${topEntity[1]} times), establishing central narrative relationship.`);
+            }
+
+            const insightSection = document.getElementById('insights');
+            const insightsList = document.getElementById('insightsList');
+            if (insights.length > 0) {
+                insightsList.innerHTML = insights.map(i => `<div class="insight-item">${i}</div>`).join('');
+                insightSection.style.display = 'block';
+            }
+        }
+
+        function filterNodes() {
+            const filter = document.getElementById('nodeFilter').value;
+            if (!network) return;
+
+            if (filter === 'all') {
+                nodes.forEach(node => nodes.update({id: node.id, hidden: false}));
+            } else {
+                nodes.forEach(node => {
+                    const hidden = node.category !== filter && (filter !== 'wolf' || node.category !== 'wolf');
+                    nodes.update({id: node.id, hidden: hidden});
+                });
+            }
+        }
+
+        function filterByAgency() {
+            const filter = document.getElementById('agencyFilter').value;
+            if (!network) return;
+
+            // This would require storing agency data in nodes, simplified for now
+            console.log('Agency filter:', filter);
+        }
+
+        function togglePhysics() {
+            if (!network) return;
+            const value = document.getElementById('physicsToggle').value;
+            network.setOptions({ physics: { enabled: value === 'on' } });
+        }
+
+        function exportEnhancedCSV() {
+            const rows = [
+                ['Story_ID', 'Sentence_Index', 'Full_Sentence', 'Wolf_Phrase', 
+                 'Grammatical_Role', 'Role_Subtype', 
+                 'Main_Verb', 'Verb_Tense', 'Verb_Voice', 'Verb_Modality', 'Verb_Class',
+                 'Direct_Adjectives', 'Adverbs', 'Prepositional_Modifiers',
+                 'Related_Entity', 'Relationship_Type',
+                 'Agency_Score', 'Previous_Sentence', 'Next_Sentence']
+            ];
+
+            analysisData.wolfOccurrences.forEach(occ => {
+                rows.push([
+                    'story_1',
+                    occ.sentenceIndex,
+                    `"${occ.sentence.replace(/"/g, '""')}"`,
+                    `"${occ.wolfPhrase}"`,
+                    occ.grammaticalRole,
+                    occ.roleSubtype,
+                    occ.mainVerb || '',
+                    occ.verbFeatures.tense || '',
+                    occ.verbFeatures.voice || '',
+                    occ.verbFeatures.modality || '',
+                    occ.verbFeatures.semanticClass || '',
+                    occ.directAdjectives ? occ.directAdjectives.join('; ') : '',
+                    occ.adverbs ? occ.adverbs.join('; ') : '',
+                    occ.prepositionalPhrases ? occ.prepositionalPhrases.join('; ') : '',
+                    occ.relatedEntity || '',
+                    occ.relationshipType || '',
+                    occ.agencyScore,
+                    `"${occ.context.previous.replace(/"/g, '""')}"`,
+                    `"${occ.context.next.replace(/"/g, '""')}"`
+                ]);
+            });
+
+            const csv = rows.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wolf-enhanced-analysis-${Date.now()}.csv`;
+            a.click();
+        }
+
+        function exportJSON() {
+            const data = {
+                metadata: {
+                    tool: 'Wolf Advanced NLP Analysis',
+                    timestamp: new Date().toISOString(),
+                    totalMentions: analysisData.wolfOccurrences.length
+                },
+                occurrences: analysisData.wolfOccurrences,
+                metrics: {
+                    subjectCount: analysisData.subjectInstances.length,
+                    objectCount: analysisData.objectInstances.length,
+                    otherCount: analysisData.otherInstances.length,
+                    avgAgency: (analysisData.wolfOccurrences.reduce((sum, o) => sum + o.agencyScore, 0) / analysisData.wolfOccurrences.length).toFixed(2)
+                },
+                verbData: Object.fromEntries(analysisData.verbData),
+                modifiers: {
+                    adjectives: Object.fromEntries(analysisData.modifiers.adjectives),
+                    adverbs: Object.fromEntries(analysisData.modifiers.adverbs)
+                },
+                entities: Object.fromEntries(analysisData.entities),
+                relationships: analysisData.relationships
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wolf-enhanced-analysis-${Date.now()}.json`;
+            a.click();
+        }
+
+        function exportGraph() {
+            if (!nodes || !edges) {
+                alert('Please analyze a text first!');
+                return;
+            }
+
+            let gexf = `<?xml version="1.0" encoding="UTF-8"?>
+<gexf xmlns="http://www.gexf.net/1.2draft" version="1.2">
+  <graph mode="static" defaultedgetype="directed">
+    <attributes class="node">
+      <attribute id="0" title="category" type="string"/>
+      <attribute id="1" title="role" type="string"/>
+    </attributes>
+    <nodes>`;
+
+            nodes.forEach(node => {
+                gexf += `\n      <node id="${node.id}" label="${node.label.replace(/\n/g, ' ').replace(/"/g, '&quot;')}">`;
+                gexf += `\n        <attvalues>`;
+                if (node.category) gexf += `\n          <attvalue for="0" value="${node.category}"/>`;
+                if (node.role) gexf += `\n          <attvalue for="1" value="${node.role}"/>`;
+                gexf += `\n        </attvalues>`;
+                gexf += `\n      </node>`;
+            });
+
+            gexf += `\n    </nodes>\n    <edges>`;
+
+            edges.forEach((edge, idx) => {
+                gexf += `\n      <edge id="${idx}" source="${edge.from}" target="${edge.to}"`;
+                if (edge.label) gexf += ` label="${edge.label}"`;
+                gexf += `/>`
+            });
+
+            gexf += `\n    </edges>\n  </graph>\n</gexf>`;
+
+            const blob = new Blob([gexf], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wolf-network-enhanced-${Date.now()}.gexf`;
+            a.click();
+        }
+
+        function generateEmbedCode() {
+            if (!nodes || !edges || !analysisData.wolfOccurrences || analysisData.wolfOccurrences.length === 0) {
+                alert('Please analyze a text first before generating embed code!');
+                return;
+            }
+
+            // Generate the complete standalone HTML
+            const embedHTML = generateStandaloneHTML();
+            
+            // Show in textarea
+            document.getElementById('embedCode').value = embedHTML;
+            
+            // Generate iframe code
+            const iframeCode = '<iframe src="YOUR_URL_HERE/wolf-network-embed.html" width="100%" height="750" frameborder="0" style="border: 2px solid #e0e0e0; border-radius: 8px;"></iframe>';
+            document.getElementById('iframeCode').value = iframeCode;
+            
+            // Show modal
+            document.getElementById('embedModal').style.display = 'block';
+        }
+
+        function generateStandaloneHTML() {
+            // Prepare complete data - convert Maps to objects for JSON serialization
+            const dataToEmbed = {
+                occurrences: analysisData.wolfOccurrences,
+                relationships: analysisData.relationships,
+                entities: Array.from(analysisData.entities.entries()),
+                modifiers: {
+                    adjectives: Array.from(analysisData.modifiers.adjectives.entries())
+                }
+            };
+            const dataStr = JSON.stringify(dataToEmbed);
+            
+            // Build HTML with proper escaping
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolf Network - Interactive</title>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.6/dist/vis-network.min.js"><\/script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; font-size: 20px; font-weight: bold; }
+        .controls { background: #fff; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+        .controls button { padding: 10px 20px; border: none; border-radius: 6px; background: #667eea; color: white; cursor: pointer; font-weight: 600; }
+        .controls button:hover { background: #764ba2; }
+        #network { width: 100%; height: 600px; background: white; position: relative; }
+        .legend { position: absolute; bottom: 15px; right: 15px; background: rgba(255,255,255,0.98); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; font-size: 12px; }
+        .legend-title { font-weight: bold; margin-bottom: 8px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; }
+        .legend-color { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #333; }
+        .stats { position: absolute; top: 15px; left: 15px; background: rgba(255,255,255,0.98); padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 1000; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">🐺 Wolf Advanced NLP Network Analysis</div>
+    <div class="controls">
+        <button onclick="network.fit()">📍 Fit</button>
+        <button onclick="togglePhysics()">⚡ Physics</button>
+        <button onclick="network.moveTo({scale:1})">🔄 Reset</button>
+    </div>
+    <div style="position: relative;">
+        <div class="stats"><div style="font-weight:bold;margin-bottom:5px;">Stats</div><div>Total: <strong id="total">0</strong></div><div>Subject: <strong id="subj">0</strong></div><div>Object: <strong id="obj">0</strong></div></div>
+        <div id="network"></div>
+        <div class="legend"><div class="legend-title">Legend</div><div class="legend-item"><div class="legend-color" style="background: #FA8072;"></div><span>Wolf (Subject)</span></div><div class="legend-item"><div class="legend-color" style="background: #FF8C00;"></div><span>Wolf (Object)</span></div><div class="legend-item"><div class="legend-color" style="background: #800080;"></div><span>Wolf (Other)</span></div><div class="legend-item"><div class="legend-color" style="background: #48D1CC;"></div><span>Verbs</span></div><div class="legend-item"><div class="legend-color" style="background: #7FFFD4;"></div><span>Entities</span></div><div class="legend-item"><div class="legend-color" style="background: #FBEC5D;"></div><span>Attributes</span></div></div>
+    </div>
+    <script>
+        let network, physics = true;
+        const rawData = ${dataStr};
+        const data = {
+            occurrences: rawData.occurrences || [],
+            relationships: rawData.relationships || [],
+            entities: new Map(rawData.entities || []),
+            adjectives: new Map(rawData.modifiers?.adjectives || [])
+        };
+        function createNetwork() {
+            const nodesData = [], edgesData = []; let id = 0;
+            let sc=0,oc=0,ot=0; data.occurrences.forEach(o=>{if(o.grammaticalRole==="subject")sc++;else if(o.grammaticalRole==="object")oc++;else ot++;});
+            nodesData.push({id:id++, label:"🐺 WOLF\\n[Subject]", color:"#FA8072", size:40+sc*3, font:{size:18, color:"white", bold:true}});
+            nodesData.push({id:id++, label:"🐺 WOLF\\n[Object]", color:"#FF8C00", size:40+oc*3, font:{size:18, color:"white", bold:true}});
+            if(ot>0) nodesData.push({id:id++, label:"🐺 WOLF\\n[Other]", color:"#800080", size:40+ot*3, font:{size:16, color:"white", bold:true}});
+            const v=new Map(),vMap=new Map(),eMap=new Map(); 
+            data.occurrences.forEach(o=>{
+                if(o.mainVerb){const k=o.mainVerb;v.set(k,{verb:o.mainVerb,role:o.grammaticalRole,count:(v.get(k)?.count||0)+1,entity:o.relatedEntity});}
+            });
+            v.forEach(d=>{const n={id:id++,label:d.verb,color:"#48D1CC",size:20+d.count*4,font:{size:13,bold:true,color:"#333"}};nodesData.push(n);vMap.set(d.verb,n.id);const sc=data.occurrences.filter(o=>o.mainVerb===d.verb&&o.grammaticalRole==="subject").length;const oc=data.occurrences.filter(o=>o.mainVerb===d.verb&&o.grammaticalRole==="object").length;if(sc>0){edgesData.push({from:0,to:n.id,width:2+sc,arrows:"to",label:"performs",color:{color:"#FF6B6B"}});}if(oc>0){edgesData.push({from:n.id,to:1,width:2+oc,arrows:"to",label:"affects",color:{color:"#4ECDC4"}});}});
+            data.entities.forEach((count,ent)=>{const n={id:id++,label:ent,color:"#7FFFD4",size:18+count*3,font:{size:12,color:"#333",bold:true}};nodesData.push(n);eMap.set(ent,n.id);});
+            data.relationships.forEach(r=>{const eid=eMap.get(r.entity.toLowerCase());const vid=vMap.get(r.verb);if(eid&&vid){if(r.type==="acts_upon"){edgesData.push({from:vid,to:eid,width:2,arrows:"to",dashes:true,color:{color:"#95E1D3"}});}else if(r.type==="acted_upon_by"){edgesData.push({from:eid,to:vid,width:2,arrows:"to",dashes:true,color:{color:"#A8E6CF"}});}}});
+            data.adjectives.forEach((count,adj)=>{const n={id:id++,label:adj,color:"#FBEC5D",size:16+count*2,font:{size:11,color:"#333",bold:true}};nodesData.push(n);const subjHas=data.occurrences.filter(o=>o.grammaticalRole==="subject"&&o.directAdjectives&&o.directAdjectives.includes(adj)).length>0;const objHas=data.occurrences.filter(o=>o.grammaticalRole==="object"&&o.directAdjectives&&o.directAdjectives.includes(adj)).length>0;const othHas=data.occurrences.filter(o=>o.grammaticalRole!=="subject"&&o.grammaticalRole!=="object"&&o.directAdjectives&&o.directAdjectives.includes(adj)).length>0;if(subjHas){edgesData.push({from:0,to:n.id,width:1.5,dashes:[5,5],label:"described_by",color:{color:"#FFAAA5"}});}if(objHas){edgesData.push({from:1,to:n.id,width:1.5,dashes:[5,5],label:"described_by",color:{color:"#FFAAA5"}});}if(othHas&&ot>0){edgesData.push({from:2,to:n.id,width:1.5,dashes:[5,5],label:"described_by",color:{color:"#FFAAA5"}});}});
+            document.getElementById("total").textContent=data.occurrences.length;document.getElementById("subj").textContent=sc;document.getElementById("obj").textContent=oc;
+            const opts={physics:{enabled:true,barnesHut:{gravitationalConstant:-12000,centralGravity:0.4,springLength:150}},interaction:{hover:true,dragNodes:true,dragView:true,zoomView:true},nodes:{shape:"circle",borderWidth:3,shadow:true},edges:{smooth:{enabled:true,type:"continuous"}}};
+            network=new vis.Network(document.getElementById("network"),{nodes:new vis.DataSet(nodesData),edges:new vis.DataSet(edgesData)},opts);
+            network.once("stabilizationIterationsDone",()=>setTimeout(()=>network.fit({animation:{duration:1000}}),100));
+        }
+        function togglePhysics(){physics=!physics;network.setOptions({physics:{enabled:physics}});}
+        window.addEventListener("load",()=>setTimeout(()=>{if(typeof vis!=="undefined")createNetwork();else document.getElementById("network").innerHTML="<div style='padding:50px;text-align:center;color:#e74c3c;'>Error loading</div>";},500));
+    <\/script>
+</body>
+</html>`;
+            
+            return html;
+        }
+
+        function closeEmbedModal() {
+            document.getElementById('embedModal').style.display = 'none';
+        }
+
+        function copyEmbedCode() {
+            const textarea = document.getElementById('embedCode');
+            textarea.select();
+            document.execCommand('copy');
+            alert('✅ Embed code copied to clipboard!');
+        }
+
+        function copyIframeCode() {
+            const textarea = document.getElementById('iframeCode');
+            textarea.select();
+            document.execCommand('copy');
+            alert('✅ iframe code copied to clipboard!\n\nRemember to replace "YOUR_URL_HERE" with your actual file URL.');
+        }
+
+        function downloadEmbedHTML() {
+            const html = generateStandaloneHTML();
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `wolf-network-embed-${Date.now()}.html`;
+            a.click();
+            alert('✅ Standalone HTML file downloaded!\n\nYou can now upload this file to:\n- GitHub Pages\n- Your web server\n- Google Drive (public)\n- Netlify/Vercel');
+        }
+
+        window.onload = function() {
+            console.log('Enhanced tool loaded, checking libraries...');
+            
+            setTimeout(() => {
+                const nlpLoaded = typeof nlp !== 'undefined';
+                const visLoaded = typeof vis !== 'undefined';
+                
+                if (nlpLoaded && visLoaded) {
+                    console.log('✓ All libraries loaded successfully');
+                    loadSample('aesop');
+                } else {
+                    console.error('✗ Library loading failed');
+                    if (!nlpLoaded || !visLoaded) {
+                        alert('Some libraries failed to load. Please refresh the page.');
+                    }
+                }
+            }, 1500);
+        };
+    </script>
+</body>
+</html>
